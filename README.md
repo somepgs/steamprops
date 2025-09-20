@@ -21,14 +21,14 @@ SteamProps - это профессиональный инструмент для
 
 ### Требования
 
-- Go 1.25.0 или выше
+- Go 1.25 или выше
 - Linux, macOS или Windows
 
 ### Сборка из исходного кода
 
 ```bash
 # Клонирование репозитория
-git clone https://github.com/yourusername/steamprops.git
+git clone https://github.com/somepgs/steamprops.git
 cd steamprops
 
 # Установка зависимостей
@@ -93,8 +93,8 @@ package main
 
 import (
     "fmt"
-    "steamprops/internal/calc_core"
-    "steamprops/internal/calc_core/region1"
+    "github.com/somepgs/steamprops/internal/calc_core"
+    "github.com/somepgs/steamprops/internal/calc_core/region1"
 )
 
 func main() {

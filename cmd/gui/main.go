@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"steamprops/internal/steamprops"
+	"github.com/somepgs/steamprops/internal/steamprops"
 	"time"
 
 	"fyne.io/fyne/v2"

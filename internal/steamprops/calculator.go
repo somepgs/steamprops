@@ -2,14 +2,14 @@ package steamprops
 
 import (
 	"fmt"
+	"github.com/somepgs/steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core/bounds"
+	"github.com/somepgs/steamprops/internal/calc_core/region1"
+	"github.com/somepgs/steamprops/internal/calc_core/region2"
+	"github.com/somepgs/steamprops/internal/calc_core/region3"
+	"github.com/somepgs/steamprops/internal/calc_core/region4"
+	"github.com/somepgs/steamprops/internal/calc_core/transport"
 	"math"
-	"steamprops/internal/calc_core"
-	"steamprops/internal/calc_core/bounds"
-	"steamprops/internal/calc_core/region1"
-	"steamprops/internal/calc_core/region2"
-	"steamprops/internal/calc_core/region3"
-	"steamprops/internal/calc_core/region4"
-	"steamprops/internal/calc_core/transport"
 )
 
 // Calculator представляет основной калькулятор SteamProps

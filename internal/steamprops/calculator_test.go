@@ -1,7 +1,7 @@
 package steamprops
 
 import (
-	"steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core"
 	"testing"
 )
 

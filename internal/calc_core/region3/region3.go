@@ -5,8 +5,8 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"github.com/somepgs/steamprops/internal/calc_core"
 	"math"
-	"steamprops/internal/calc_core"
 	"strconv"
 	"strings"
 )

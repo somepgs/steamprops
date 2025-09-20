@@ -3,12 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/somepgs/steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core/region1"
+	"github.com/somepgs/steamprops/internal/calc_core/region2"
+	"github.com/somepgs/steamprops/internal/calc_core/region3"
+	"github.com/somepgs/steamprops/internal/calc_core/region5"
 	"log"
-	"steamprops/internal/calc_core"
-	"steamprops/internal/calc_core/region1"
-	"steamprops/internal/calc_core/region2"
-	"steamprops/internal/calc_core/region3"
-	"steamprops/internal/calc_core/region5"
 	"strings"
 )
 

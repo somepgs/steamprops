@@ -1,6 +1,6 @@
-module steamprops
+module github.com/somepgs/steamprops
 
-go 1.25.0
+go 1.25
 
 require fyne.io/fyne/v2 v2.4.5
 

@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strconv"
 
-	"steamprops/internal/steamprops"
+	"github.com/somepgs/steamprops/internal/steamprops"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 )
 
-// regionToString returns human-readable region name
+// regionToString returns a human-readable region name
 func regionToString(r int) string {
 	switch r {
 	case 1:

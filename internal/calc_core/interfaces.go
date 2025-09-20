@@ -2,8 +2,8 @@ package calc_core
 
 import (
 	"fmt"
-	"steamprops/internal/calc_core/bounds"
-	"steamprops/internal/calc_core/region4"
+	"github.com/somepgs/steamprops/internal/calc_core/bounds"
+	"github.com/somepgs/steamprops/internal/calc_core/region4"
 )
 
 // Properties represents thermodynamic properties of water/steam

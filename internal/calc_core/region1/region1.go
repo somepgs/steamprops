@@ -5,9 +5,9 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"github.com/somepgs/steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core/region4"
 	"math"
-	"steamprops/internal/calc_core"
-	"steamprops/internal/calc_core/region4"
 	"strconv"
 	"strings"
 )
