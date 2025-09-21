@@ -2,6 +2,7 @@ package calc_core
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/somepgs/steamprops/internal/calc_core/bounds"
 	"github.com/somepgs/steamprops/internal/calc_core/region4"
@@ -132,35 +133,58 @@ func (e *RegionNotApplicableError) Error() string {
 	return fmt.Sprintf("region %d is not applicable for T=%.2f°C, p=%.0f Pa", e.Region, e.T, e.P)
 }
 
-// RegionFromTP returns a best-effort region guess using Region4 saturation and B23 boundary.
+// RegionFromTP returns the correct region using official IF-97 boundaries.
 // Inputs: T in K, p in Pa.
 func RegionFromTP(T float64, p float64) Region {
-	// Very high T: Region 5 by IF-97 (T > 1073.15 K up to 2273.15 K, p up to 50 MPa)
-	if T > 1073.15 {
+	// Check input validity
+	if T <= 0 || p <= 0 {
+		return RegionAuto
+	}
+
+	// Region 5: T > 1073.15 K up to 2273.15 K, p up to 50 MPa
+	if T > 1073.15 && T <= 2273.15 && p <= 50e6 {
 		return Region5
 	}
-	// Saturation line separates regions 1 and 2 below ~ 647K
+
+	// Region 3: T >= 623.15 K and p >= 16.529 MPa
+	if T >= 623.15 && p >= 16.529e6 {
+		// Check B23 boundary for T > 623.15 K
+		if T > 623.15 {
+			tB23, err := bounds.B23T(p / 1e6) // p in MPa
+			if err == nil && T >= tB23 {
+				return Region3
+			}
+		} else {
+			// At T = 623.15 K, Region 3 applies for p >= 16.529 MPa
+			return Region3
+		}
+	}
+
+	// Region 4: saturation line (T < 647.096 K)
 	if T < 647.096 {
 		psat, err := region4.SaturationPressure(T)
 		if err == nil {
-			if p >= psat {
-				return Region1
+			// Use tolerance for numerical precision
+			tolerance := 1e-3 * psat
+			if math.Abs(p-psat) <= tolerance {
+				return Region4
 			}
-			return Region2
 		}
 	}
-	// Between 2 and 3 use B23
-	T23, err := bounds.B23T(p / 1e6) // p in MPa
-	if err == nil {
-		if T >= T23 {
-			return Region2
+
+	// Region 1: compressed liquid (T < 647.096 K and p > psat)
+	if T < 647.096 {
+		psat, err := region4.SaturationPressure(T)
+		if err == nil && p > psat {
+			return Region1
 		}
-		return Region3
 	}
-	// Fallback heuristic
-	if p >= 16.5292e6 {
-		return Region3
-	}
+
+	// Region 2: superheated steam (default for remaining cases)
+	// This includes:
+	// - T < 647.096 K and p < psat
+	// - T >= 647.096 K and T < 1073.15 K
+	// - T >= 623.15 K and p < 16.529 MPa
 	return Region2
 }
 

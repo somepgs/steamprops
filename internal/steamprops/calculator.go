@@ -2,14 +2,15 @@ package steamprops
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/somepgs/steamprops/internal/calc_core"
-	"github.com/somepgs/steamprops/internal/calc_core/bounds"
 	"github.com/somepgs/steamprops/internal/calc_core/region1"
 	"github.com/somepgs/steamprops/internal/calc_core/region2"
 	"github.com/somepgs/steamprops/internal/calc_core/region3"
 	"github.com/somepgs/steamprops/internal/calc_core/region4"
+	"github.com/somepgs/steamprops/internal/calc_core/region5"
 	"github.com/somepgs/steamprops/internal/calc_core/transport"
-	"math"
 )
 
 // Calculator представляет основной калькулятор SteamProps
@@ -31,37 +32,68 @@ type InputData struct {
 	Entropy     float64 // кДж/(кг·К)
 }
 
-// Validate проверяет корректность входных данных
+// Validate проверяет корректность входных данных с улучшенной валидацией
 func (i *InputData) Validate() error {
 	if i.Mode != "TP" && i.Mode != "HS" {
 		return fmt.Errorf("неверный режим расчета: %s", i.Mode)
 	}
 
 	if i.Mode == "TP" {
+		// Проверка на NaN и Inf
+		if math.IsNaN(i.Temperature) || math.IsInf(i.Temperature, 0) {
+			return fmt.Errorf("температура содержит недопустимое значение: %v", i.Temperature)
+		}
+		if math.IsNaN(i.Pressure) || math.IsInf(i.Pressure, 0) {
+			return fmt.Errorf("давление содержит недопустимое значение: %v", i.Pressure)
+		}
+
+		// Проверка физических границ
 		if i.Temperature < -273.15 {
-			return fmt.Errorf("температура не может быть ниже абсолютного нуля")
+			return fmt.Errorf("температура %.2f°C ниже абсолютного нуля", i.Temperature)
 		}
 		if i.Pressure <= 0 {
-			return fmt.Errorf("давление должно быть положительным")
+			return fmt.Errorf("давление %.0f Па должно быть положительным", i.Pressure)
 		}
+
+		// Проверка границ IF-97
 		if i.Temperature > 2000 {
-			return fmt.Errorf("температура слишком высокая для IF-97")
+			return fmt.Errorf("температура %.2f°C превышает максимальную для IF-97 (2000°C)", i.Temperature)
 		}
 		if i.Pressure > 100e6 {
-			return fmt.Errorf("давление слишком высокое для IF-97")
+			return fmt.Errorf("давление %.0f Па превышает максимальное для IF-97 (100 МПа)", i.Pressure)
 		}
+
+		// Проверка минимальных границ IF-97
+		if i.Temperature < -0.01 {
+			return fmt.Errorf("температура %.2f°C ниже минимальной для IF-97 (-0.01°C)", i.Temperature)
+		}
+		if i.Pressure < 611.657 {
+			return fmt.Errorf("давление %.0f Па ниже минимального для IF-97 (611.657 Па)", i.Pressure)
+		}
+
 	} else { // HS режим
+		// Проверка на NaN и Inf
+		if math.IsNaN(i.Enthalpy) || math.IsInf(i.Enthalpy, 0) {
+			return fmt.Errorf("энтальпия содержит недопустимое значение: %v", i.Enthalpy)
+		}
+		if math.IsNaN(i.Entropy) || math.IsInf(i.Entropy, 0) {
+			return fmt.Errorf("энтропия содержит недопустимое значение: %v", i.Entropy)
+		}
+
+		// Проверка физических границ
 		if i.Enthalpy < 0 {
-			return fmt.Errorf("энтальпия не может быть отрицательной")
+			return fmt.Errorf("энтальпия %.2f кДж/кг не может быть отрицательной", i.Enthalpy)
 		}
 		if i.Entropy < 0 {
-			return fmt.Errorf("энтропия не может быть отрицательной")
+			return fmt.Errorf("энтропия %.2f кДж/(кг·К) не может быть отрицательной", i.Entropy)
 		}
+
+		// Проверка разумных границ для IF-97
 		if i.Enthalpy > 5000 {
-			return fmt.Errorf("энтальпия слишком высокая для IF-97")
+			return fmt.Errorf("энтальпия %.2f кДж/кг превышает разумный максимум для IF-97", i.Enthalpy)
 		}
 		if i.Entropy > 15 {
-			return fmt.Errorf("энтропия слишком высокая для IF-97")
+			return fmt.Errorf("энтропия %.2f кДж/(кг·К) превышает разумный максимум для IF-97", i.Entropy)
 		}
 	}
 
@@ -152,7 +184,7 @@ func (c *Calculator) calculateFromTP(temperature, pressure float64) (calc_core.P
 			props, err = region2.Calculate(temperature, pressure)
 		}
 	case calc_core.Region5:
-		return calc_core.Properties{}, calc_core.Region5, fmt.Errorf("Region 5 не поддерживается в данном калькуляторе")
+		props, err = region5.Calculate(temperature, pressure)
 	default:
 		return calc_core.Properties{}, calc_core.RegionAuto, fmt.Errorf("неопределенный регион")
 	}
@@ -179,56 +211,10 @@ func (c *Calculator) calculateFromHS(enthalpy, entropy float64) (calc_core.Prope
 }
 
 // determineRegion определяет регион IF-97 по температуре и давлению
+// Использует улучшенную логику определения региона
 func (c *Calculator) determineRegion(temperature, pressure float64) calc_core.Region {
-	// Критические значения
-	const T_c = 647.096  // K
-	const P_c = 22.064e6 // Pa
-
-	// Region 4 (линия насыщения)
-	if temperature >= 273.15 && temperature <= T_c {
-		pSat, err := region4.SaturationPressure(temperature)
-		if err == nil && math.Abs(pressure-pSat) < 1e-3*pSat {
-			return calc_core.Region4
-		}
-	}
-
-	// Region 3 (критическая область)
-	if temperature >= 623.15 && temperature <= 1073.15 && pressure >= 16.529e6 && pressure <= 100e6 {
-		tB23, err := bounds.B23T(pressure)
-		if err == nil && temperature >= tB23 {
-			return calc_core.Region3
-		}
-	}
-
-	// Region 2 (пар)
-	if temperature > T_c || (temperature >= 273.15 && temperature <= T_c && pressure < P_c) {
-		if temperature >= 273.15 && temperature <= T_c {
-			pSat, err := region4.SaturationPressure(temperature)
-			if err == nil && pressure < pSat {
-				return calc_core.Region2
-			}
-		} else if temperature > T_c {
-			tB23, err := bounds.B23T(pressure)
-			if err == nil && temperature < tB23 {
-				return calc_core.Region2
-			}
-		}
-	}
-
-	// Region 1 (сжатая жидкость)
-	if temperature >= 273.15 && temperature <= T_c {
-		pSat, err := region4.SaturationPressure(temperature)
-		if err == nil && pressure > pSat {
-			return calc_core.Region1
-		}
-	}
-
-	// Region 5 (высокотемпературная область)
-	if temperature > 1073.15 && temperature <= 2273.15 && pressure <= 100e6 {
-		return calc_core.Region5
-	}
-
-	return calc_core.RegionAuto
+	// Используем улучшенную функцию из calc_core
+	return calc_core.RegionFromTP(temperature, pressure)
 }
 
 // guessRegionFromHS пытается определить регион по энтальпии и энтропии

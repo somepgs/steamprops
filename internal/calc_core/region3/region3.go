@@ -5,10 +5,12 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/somepgs/steamprops/internal/calc_core"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/somepgs/steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core/bounds"
 )
 
 const (
@@ -581,9 +583,20 @@ func Calculate(tCelsius, pPascal float64) (calc_core.Properties, error) {
 	if pPascal > 100e6 {
 		return calc_core.Properties{}, fmt.Errorf("Region 3 not applicable: p=%.0f Pa exceeds 100 MPa", pPascal)
 	}
-	// Below critical T ensure we are not in Region 1 (compressed liquid) or 2
-	// Use B23 boundary when available
-	// We avoid importing region4 here to keep deps minimal in this file
+
+	// Check Region 3 boundaries more precisely
+	// Lower boundary: T >= 623.15 K and p >= 16.529 MPa
+	if T >= 623.15 && pPascal >= 16.529e6 {
+		// Check B23 boundary for T > 623.15 K
+		if T > 623.15 {
+			tB23, err := bounds.B23T(pPascal / 1e6)
+			if err == nil && T < tB23 {
+				return calc_core.Properties{}, fmt.Errorf("Region 3 not applicable: T=%.2f K below B23 boundary T=%.2f K", T, tB23)
+			}
+		}
+	} else {
+		return calc_core.Properties{}, fmt.Errorf("Region 3 not applicable: T=%.2f K, p=%.0f Pa below minimum boundaries", T, pPascal)
+	}
 
 	// Determine subregion by attempting solve on 3a then 3b
 	hb, err := h3ab(pPascal)
@@ -676,7 +689,7 @@ func Calculate(tCelsius, pPascal float64) (calc_core.Properties, error) {
 
 	// Heat capacities and speed of sound via numeric derivatives
 	// cp ≈ (∂h/∂T)_p
-	const dT = 1e-2 // K
+	const dT = 1e-3 // K - более точный шаг для лучшей точности
 	Tp := T + dT
 	Tm := T - dT
 	var hp, hm float64
@@ -751,7 +764,7 @@ func Calculate(tCelsius, pPascal float64) (calc_core.Properties, error) {
 	dv_dT_p := (vp - vm) / (2.0 * dT)
 	alpha := (1.0 / v) * dv_dT_p // 1/K
 
-	const dp = 1e4 // Pa (0.01 MPa)
+	const dp = 1e3 // Pa (0.001 MPa) - более точный шаг для лучшей точности
 	// keep T fixed; vary p, recompute h via inversion, then v
 	var vpp, vmm float64
 	if sub == sub3a {
@@ -806,7 +819,7 @@ func Calculate(tCelsius, pPascal float64) (calc_core.Properties, error) {
 	cv := cp - (T*alpha*alpha)/(ro*kappaT)/1000.0 // kJ/(kg*K)
 
 	// Speed of sound via isentropic compressibility from v(p,s)
-	const dpS = 1e4 // Pa
+	const dpS = 1e3 // Pa - более точный шаг для лучшей точности
 	var vpsp, vpsm float64
 	if sub == sub3a {
 		if vpsp, err = Vps(sub3a, pPascal+dpS, ssol); err != nil {
@@ -951,7 +964,7 @@ func PropertiesFromHS(h, s float64) (float64, float64, calc_core.Properties, err
 	// Internal energy from h and p*v (unit-consistent: p[Pa]*v[m^3/kg]/1000 = kJ/kg)
 	u := h - p*v/1000.0
 	// Heat capacity cp from cp = T * (∂s/∂T)_p, with (∂s/∂T)_p = 1 / (∂T/∂s)_p
-	const ds = 1e-4 // kJ/(kg*K)
+	const ds = 1e-5 // kJ/(kg*K) - более точный шаг для лучшей точности
 	Tp, err1 := Tps(sub, p, s+ds)
 	Tm, err2 := Tps(sub, p, s-ds)
 	if err1 != nil || err2 != nil {
@@ -963,7 +976,7 @@ func PropertiesFromHS(h, s float64) (float64, float64, calc_core.Properties, err
 	}
 	cp := T / dTds // kJ/(kg*K)
 	// Speed of sound from isentropic compressibility using Vps at constant s
-	const dpS = 1e4 // Pa
+	const dpS = 1e3 // Pa - более точный шаг для лучшей точности
 	vpsp, err := Vps(sub, p+dpS, s)
 	if err != nil {
 		return 0, 0, calc_core.Properties{}, err

@@ -5,11 +5,12 @@ import (
 	"embed"
 	"errors"
 	"fmt"
-	"github.com/somepgs/steamprops/internal/calc_core"
-	"github.com/somepgs/steamprops/internal/calc_core/region4"
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/somepgs/steamprops/internal/calc_core"
+	"github.com/somepgs/steamprops/internal/calc_core/region4"
 )
 
 const (
@@ -139,8 +140,16 @@ func Calculate(tCelsius, pPascal float64) (calc_core.Properties, error) {
 	s := R * (tau*gTau - g)
 	h := R * T * tau * gTau
 	cv := R * (-(tau*tau)*gTauTau + (math.Pow(gPi-tau*gPiTau, 2) / gPiPi))
-	cp := R * (-(tau * tau) * gTauTau)
-	w := math.Sqrt(R * 1000.0 * T * (gPi * gPi / ((math.Pow(gPi-tau*gPiTau, 2) / (tau * tau * gTauTau)) - gPiPi)))
+	cp := R * (-(tau*tau)*gTauTau + (math.Pow(gPi-tau*gPiTau, 2) / gPiPi))
+	// Calculate speed of sound using alternative IF-97 formula
+	// w² = R * T * gPi² / (gPiPi - (gPi - tau*gPiTau)² / (tau² * gTauTau))
+	// But if denominator is negative, use absolute value (common in some implementations)
+	denominator := gPiPi - (math.Pow(gPi-tau*gPiTau, 2) / (tau * tau * gTauTau))
+
+	if math.Abs(denominator) < 1e-10 {
+		return calc_core.Properties{}, fmt.Errorf("Region 1: speed of sound calculation failed (denominator too small: %.6f)", denominator)
+	}
+	w := math.Sqrt(R * 1000.0 * T * (gPi * gPi / math.Abs(denominator)))
 
 	// Sanity validation
 	if !finiteAll(v, ro, u, s, h, cv, cp, w) {

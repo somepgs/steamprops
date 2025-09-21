@@ -3,13 +3,14 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
+	"strings"
+
 	"github.com/somepgs/steamprops/internal/calc_core"
 	"github.com/somepgs/steamprops/internal/calc_core/region1"
 	"github.com/somepgs/steamprops/internal/calc_core/region2"
 	"github.com/somepgs/steamprops/internal/calc_core/region3"
 	"github.com/somepgs/steamprops/internal/calc_core/region5"
-	"log"
-	"strings"
 )
 
 func main() {

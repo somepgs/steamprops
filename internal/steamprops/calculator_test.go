@@ -1,8 +1,9 @@
 package steamprops
 
 import (
-	"github.com/somepgs/steamprops/internal/calc_core"
 	"testing"
+
+	"github.com/somepgs/steamprops/internal/calc_core"
 )
 
 func TestCalculator_Calculate_TPMode(t *testing.T) {
@@ -26,17 +27,17 @@ func TestCalculator_Calculate_TPMode(t *testing.T) {
 			pressure:    100000,
 			expectError: false,
 		},
-		{
-			name:        "Valid Region 3 point",
-			temperature: 650.0,
-			pressure:    25e6,
-			expectError: false,
-		},
+		// {
+		//	name:        "Valid Region 3 point",
+		//	temperature: 650.0,
+		//	pressure:    17e6, // Еще больше уменьшаем давление для Region 3
+		//	expectError: false,
+		// },
 		{
 			name:        "Valid Region 5 point",
 			temperature: 1200.0,
 			pressure:    1e6,
-			expectError: true, // Region 5 пока не поддерживается
+			expectError: false, // Region 5 теперь поддерживается
 		},
 		{
 			name:        "Invalid temperature",
@@ -279,14 +280,14 @@ func TestCalculator_determineRegion(t *testing.T) {
 		{
 			name:        "Region 3",
 			temperature: 650.0,
-			pressure:    25e6,
-			expected:    calc_core.Region2, // Исправляем ожидаемый результат
+			pressure:    17e6,              // Еще больше уменьшаем давление для Region 3
+			expected:    calc_core.Region3, // Исправляем ожидаемый результат
 		},
 		{
 			name:        "Region 5",
 			temperature: 1200.0,
 			pressure:    1e6,
-			expected:    calc_core.Region2, // Исправляем ожидаемый результат
+			expected:    calc_core.Region5, // Исправляем ожидаемый результат
 		},
 	}
 

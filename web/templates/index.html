@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SteamProps - IF-97 Calculator</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Заголовок -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-calculator"></i> SteamProps</h1>
+                <p>Калькулятор термодинамических свойств воды и пара (IAPWS IF-97)</p>
+            </div>
+        </header>
+
+        <!-- Основной контент -->
+        <main class="main-content">
+            <!-- Панель ввода -->
+            <div class="input-panel">
+                <div class="card">
+                    <h2><i class="fas fa-edit"></i> Параметры расчета</h2>
+                    
+                    <!-- Режим расчета -->
+                    <div class="form-group">
+                        <label for="mode">Режим расчета:</label>
+                        <select id="mode" class="form-control">
+                            <option value="TP">TP (Температура-Давление)</option>
+                            <option value="HS">HS (Энтальпия-Энтропия)</option>
+                        </select>
+                    </div>
+
+                    <!-- TP режим -->
+                    <div id="tp-inputs" class="input-group">
+                        <div class="form-group">
+                            <label for="temperature">Температура:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="temperature" class="form-control" value="200" step="0.1">
+                                <select id="temp-unit" class="form-control unit-select">
+                                    <option value="C">°C</option>
+                                    <option value="K">K</option>
+                                    <option value="F">°F</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="pressure">Давление:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="pressure" class="form-control" value="101325" step="1">
+                                <select id="pressure-unit" class="form-control unit-select">
+                                    <option value="Pa">Pa</option>
+                                    <option value="kPa">kPa</option>
+                                    <option value="MPa">MPa</option>
+                                    <option value="bar">bar</option>
+                                    <option value="atm">atm</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HS режим -->
+                    <div id="hs-inputs" class="input-group" style="display: none;">
+                        <div class="form-group">
+                            <label for="enthalpy">Энтальпия:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="enthalpy" class="form-control" value="2000" step="0.1">
+                                <span class="unit-label">кДж/кг</span>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="entropy">Энтропия:</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="entropy" class="form-control" value="5" step="0.001">
+                                <span class="unit-label">кДж/(кг·К)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Регион -->
+                    <div class="form-group">
+                        <label for="region">Регион IF-97:</label>
+                        <select id="region" class="form-control">
+                            <option value="auto">Автоматический выбор</option>
+                            <option value="1">Region 1 (Сжатая жидкость)</option>
+                            <option value="2">Region 2 (Перегретый пар)</option>
+                            <option value="3">Region 3 (Критическая область)</option>
+                            <option value="4">Region 4 (Линия насыщения)</option>
+                            <option value="5">Region 5 (Высокотемпературный газ)</option>
+                        </select>
+                    </div>
+
+                    <!-- Кнопки -->
+                    <div class="button-group">
+                        <button id="calculate-btn" class="btn btn-primary">
+                            <i class="fas fa-calculator"></i> Рассчитать
+                        </button>
+                        <button id="clear-btn" class="btn btn-secondary">
+                            <i class="fas fa-eraser"></i> Очистить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Панель результатов -->
+            <div class="results-panel">
+                <div class="card">
+                    <h2><i class="fas fa-chart-line"></i> Результаты расчета</h2>
+                    
+                    <!-- Статус -->
+                    <div id="status" class="status-info">
+                        <div class="status-item">
+                            <span class="status-label">Фаза:</span>
+                            <span id="phase" class="status-value">-</span>
+                        </div>
+                        <div class="status-item">
+                            <span class="status-label">Регион:</span>
+                            <span id="region-result" class="status-value">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Результаты -->
+                    <div id="results" class="results-grid">
+                        <!-- Результаты будут добавлены динамически -->
+                    </div>
+
+                    <!-- График -->
+                    <div class="chart-container">
+                        <h3><i class="fas fa-chart-area"></i> График свойств</h3>
+                        <canvas id="propertiesChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Информационная панель -->
+        <aside class="info-panel">
+            <div class="card">
+                <h3><i class="fas fa-info-circle"></i> Информация</h3>
+                <div class="info-content">
+                    <h4>Регионы IF-97:</h4>
+                    <ul>
+                        <li><strong>Region 1:</strong> Сжатая жидкость</li>
+                        <li><strong>Region 2:</strong> Перегретый пар</li>
+                        <li><strong>Region 3:</strong> Критическая область</li>
+                        <li><strong>Region 4:</strong> Линия насыщения</li>
+                        <li><strong>Region 5:</strong> Высокотемпературный газ</li>
+                    </ul>
+                    
+                    <h4>Единицы измерения:</h4>
+                    <ul>
+                        <li><strong>Температура:</strong> °C, K, °F</li>
+                        <li><strong>Давление:</strong> Pa, kPa, MPa, bar, atm</li>
+                        <li><strong>Энтальпия:</strong> кДж/кг</li>
+                        <li><strong>Энтропия:</strong> кДж/(кг·К)</li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
+        <!-- История расчетов -->
+        <div class="history-panel">
+            <div class="card">
+                <h3><i class="fas fa-history"></i> История расчетов</h3>
+                <div id="history-list" class="history-list">
+                    <!-- История будет добавлена динамически -->
+                </div>
+                <button id="clear-history-btn" class="btn btn-small">
+                    <i class="fas fa-trash"></i> Очистить историю
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Загрузочный индикатор -->
+    <div id="loading" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Выполняется расчет...</p>
+        </div>
+    </div>
+
+    <!-- Уведомления -->
+    <div id="notifications" class="notifications"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
