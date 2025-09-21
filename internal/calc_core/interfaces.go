@@ -2,11 +2,12 @@ package calc_core
 
 import (
 	"fmt"
+
 	"github.com/somepgs/steamprops/internal/calc_core/bounds"
 	"github.com/somepgs/steamprops/internal/calc_core/region4"
 )
 
-// Properties represents thermodynamic properties of water/steam
+// Properties represent thermodynamic properties of water/steam
 type Properties struct {
 	SpecificVolume                float64 // m^3/kg
 	Density                       float64 // kg/m^3
